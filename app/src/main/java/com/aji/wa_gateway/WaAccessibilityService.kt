@@ -180,9 +180,13 @@ class WaAccessibilityService : AccessibilityService() {
         val sendButtons = root.findAccessibilityNodeInfosByViewId(SEND_BUTTON_ID)
         val button = sendButtons?.firstOrNull { it.isClickable }
         if (button != null) {
+            val rect = android.graphics.Rect()
+            button.getBoundsInScreen(rect)
+            val x = (rect.left + rect.right) / 2f
+            val y = (rect.top + rect.bottom) / 2f
             val path = Path().apply {
-                moveTo(button.boundsInScreen.centerX().toFloat(), button.boundsInScreen.centerY().toFloat())
-                lineTo(button.boundsInScreen.centerX().toFloat(), button.boundsInScreen.centerY().toFloat())
+                moveTo(x, y)
+                lineTo(x, y)
             }
             val gesture = GestureDescription.Builder()
                 .addStroke(GestureDescription.StrokeDescription(path, 0, 100))

@@ -1,10 +1,9 @@
 package com.aji.wa_gateway.service
 
-import kotlin.math.abs
-import kotlin.random.Random
+import java.util.Random
 
 object TypingBehavior {
-    private val gaussianRandom = Random(seed = System.currentTimeMillis())
+    private val gaussianRandom = Random(System.currentTimeMillis())
 
     fun calculateDelayPerChar(minDelay: Int, maxDelay: Int): Long {
         val mean = (minDelay + maxDelay) / 2.0
