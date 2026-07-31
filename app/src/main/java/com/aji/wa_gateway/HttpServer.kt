@@ -52,6 +52,7 @@ class HttpServer(private val context: Context) {
             routing {
                 get("/") { serveWebUi(call) }
                 get("/assets/{path...}") { serveAsset(call) }
+                get("/{page}") { serveWebUi(call) }
 
                 get("/api/config") {
                     val config = configRepo.getConfig()
@@ -287,7 +288,7 @@ class HttpServer(private val context: Context) {
     private suspend fun serveAsset(call: ApplicationCall) {
         val path = call.parameters["path"] ?: return call.respondText("Not found", status = HttpStatusCode.NotFound)
         try {
-            val fullPath = "web_ui/$path"
+            val fullPath = "web_ui/assets/$path"
             val bytes = context.assets.open(fullPath).readBytes()
             val contentType = when {
                 path.endsWith(".js") -> ContentType.Application.JavaScript
