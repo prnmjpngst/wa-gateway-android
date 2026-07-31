@@ -93,6 +93,7 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:2.3.7")
     implementation("io.ktor:ktor-serialization-gson:2.3.7")
     implementation("io.ktor:ktor-server-websockets:2.3.7")
+    implementation("io.ktor:ktor-server-html-builder:2.3.7")
 
     implementation("com.google.api-client:google-api-client:2.2.0")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")

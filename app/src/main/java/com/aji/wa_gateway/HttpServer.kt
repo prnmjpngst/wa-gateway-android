@@ -22,6 +22,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.html.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
+import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
@@ -220,13 +221,15 @@ class HttpServer(private val context: Context) {
 
                 webSocket("/ws/logs") {
                     val logListener: (LoggingUtil.LogEntry) -> Unit = { entry ->
-                        try {
-                            send(Frame.Text(gson.toJson(mapOf(
-                                "level" to entry.level.name,
-                                "message" to entry.message,
-                                "timestamp" to entry.timestamp
-                            ))))
-                        } catch (_: Exception) {}
+                        launch {
+                            try {
+                                send(Frame.Text(gson.toJson(mapOf(
+                                    "level" to entry.level.name,
+                                    "message" to entry.message,
+                                    "timestamp" to entry.timestamp
+                                ))))
+                            } catch (_: Exception) {}
+                        }
                     }
                     LoggingUtil.addListener(logListener)
                     try {
