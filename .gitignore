@@ -11,3 +11,6 @@ local.properties
 /web-ui/node_modules
 /web-ui/dist
 /app/build
+keystore.properties
+keystore.jks
+*.keystore
