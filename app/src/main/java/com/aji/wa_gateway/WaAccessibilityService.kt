@@ -310,19 +310,23 @@ class WaAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun recordResult(status: String, error: String? = null) {
+    private fun recordResult(result: SendResult) {
         val number = currentTargetNumber ?: return
-        onSendResult?.invoke(SendResult(status, error))
+        onSendResult?.invoke(result)
         serviceScope.launch(Dispatchers.IO) {
             historyRepo.insert(
                 SendHistory(
                     nomorHp = number,
                     namaPemilik = currentTargetName,
-                    status = status,
-                    errorMessage = error
+                    status = result.status,
+                    errorMessage = result.errorMessage
                 )
             )
         }
+    }
+
+    private fun recordResult(status: String, error: String? = null) {
+        recordResult(SendResult(status, error))
     }
 
     private fun resetState() {

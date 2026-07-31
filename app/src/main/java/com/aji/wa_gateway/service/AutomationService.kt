@@ -109,16 +109,16 @@ class AutomationService(
         }
     }
 
-    private suspend fun sendMessage(target: Target, message: String, config: AppConfig): WaAccessibilityService.SendResult {
+    private suspend fun sendMessage(target: Target, message: String, config: AppConfig): WaAccessibilityService.Companion.SendResult {
         val waService = WaAccessibilityService.instance
         if (waService == null) {
             LoggingUtil.error("Accessibility service not enabled")
-            return WaAccessibilityService.SendResult(SendHistory.STATUS_ERROR, "Accessibility service not enabled")
+            return WaAccessibilityService.Companion.SendResult(SendHistory.STATUS_ERROR, "Accessibility service not enabled")
         }
 
         val normalizedNumber = target.nomorHp.replace(Regex("[^0-9]"), "")
         if (normalizedNumber.length < 5) {
-            return WaAccessibilityService.SendResult(SendHistory.STATUS_INVALID_NUMBER, "Invalid phone number")
+            return WaAccessibilityService.Companion.SendResult(SendHistory.STATUS_INVALID_NUMBER, "Invalid phone number")
         }
 
         LoggingUtil.info("Opening WA: https://wa.me/$normalizedNumber")
@@ -151,9 +151,4 @@ class AutomationService(
         currentTarget = ""
         onStatusChanged?.invoke(STATE_IDLE)
     }
-
-    data class SendResult(
-        val status: String,
-        val errorMessage: String? = null
-    )
 }
