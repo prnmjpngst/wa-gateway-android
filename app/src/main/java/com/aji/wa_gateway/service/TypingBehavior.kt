@@ -20,14 +20,14 @@ object TypingBehavior {
 
     fun getPauseDuration(minPause: Int, maxPause: Int): Long {
         if (minPause >= maxPause) return minPause.toLong()
-        return Random.nextLong(minPause.toLong(), maxPause.toLong())
+        val range = maxPause - minPause + 1
+        return (minPause + gaussianRandom.nextInt(range)).toLong()
     }
 
     fun getPresendDelay(baseDelayMs: Int): Long {
         val variation = (baseDelayMs * 0.3).toInt()
-        return Random.nextLong(
-            (baseDelayMs - variation).coerceAtLeast(200).toLong(),
-            (baseDelayMs + variation).toLong()
-        )
+        val min = (baseDelayMs - variation).coerceAtLeast(200)
+        val range = baseDelayMs + variation - min + 1
+        return (min + gaussianRandom.nextInt(range)).toLong()
     }
 }

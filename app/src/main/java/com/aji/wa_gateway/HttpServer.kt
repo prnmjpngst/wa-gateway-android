@@ -56,7 +56,7 @@ class HttpServer(private val context: Context) {
                 get("/api/config") {
                     val config = configRepo.getConfig()
                     call.respond(mapOf(
-                        "saKeyConfigured" to EncryptionUtil.hasSaKey(context),
+                        "saKeyConfigured" to EncryptionUtil.hasSaKey(this@HttpServer.context),
                         "sheetId" to (config.sheetId ?: ""),
                         "sheetTab" to config.sheetTab,
                         "messageTemplate" to config.messageTemplate,
@@ -80,7 +80,7 @@ class HttpServer(private val context: Context) {
                 post("/api/config/sa-key") {
                     val body = call.receive<Map<String, String>>()
                     val saKeyJson = body["saKey"] ?: return@post call.respond(mapOf("error" to "Missing saKey"))
-                    EncryptionUtil.saveSaKey(context, saKeyJson)
+                    EncryptionUtil.saveSaKey(this@HttpServer.context, saKeyJson)
                     LoggingUtil.info("SA key saved (redacted)")
                     call.respond(mapOf("success" to true))
                 }
