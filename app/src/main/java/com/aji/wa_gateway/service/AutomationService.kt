@@ -8,6 +8,7 @@ import com.aji.wa_gateway.db.entity.Target
 import com.aji.wa_gateway.repository.HistoryRepository
 import com.aji.wa_gateway.repository.TargetRepository
 import com.aji.wa_gateway.util.LoggingUtil
+import com.aji.wa_gateway.util.PhoneUtil
 import kotlinx.coroutines.*
 import kotlin.random.Random
 
@@ -116,7 +117,7 @@ class AutomationService(
             return WaAccessibilityService.Companion.SendResult(SendHistory.STATUS_ERROR, "Accessibility service not enabled")
         }
 
-        val normalizedNumber = target.nomorHp.replace(Regex("[^0-9]"), "")
+        val normalizedNumber = PhoneUtil.normalize(target.nomorHp)
         if (normalizedNumber.length < 5) {
             return WaAccessibilityService.Companion.SendResult(SendHistory.STATUS_INVALID_NUMBER, "Invalid phone number")
         }
