@@ -8,13 +8,13 @@ val webUiDir = rootProject.projectDir.resolve("web-ui")
 val webUiAssetsDir = projectDir.resolve("src/main/assets/web_ui")
 
 val buildWebUi by tasks.registering(Exec::class) {
-    workingDir.set(webUiDir)
+    workingDir = webUiDir
     commandLine("npm", "install")
 }
 
 val buildWebUiBundle by tasks.registering(Exec::class) {
     dependsOn(buildWebUi)
-    workingDir.set(webUiDir)
+    workingDir = webUiDir
     commandLine("npm", "run", "build")
 }
 
