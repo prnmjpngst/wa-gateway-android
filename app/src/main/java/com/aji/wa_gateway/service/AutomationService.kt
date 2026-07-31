@@ -125,7 +125,7 @@ class AutomationService(
 
         return suspendCancellableCoroutine { cont ->
             waService.onSendResult = { result ->
-                if (cont.isActive) cont.resume(result)
+                if (cont.isActive) cont.resumeWith(Result.success(result))
             }
             waService.initiateSend(normalizedNumber, message, target.namaPemilik)
         }
