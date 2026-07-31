@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WA Gateway</string>
+    <string name="accessibility_service_description">WA Gateway uses Accessibility Service to automate WhatsApp message sending. It detects WhatsApp chat windows, types messages, and presses the send button automatically. No user data is collected or transmitted.</string>
+</resources>
