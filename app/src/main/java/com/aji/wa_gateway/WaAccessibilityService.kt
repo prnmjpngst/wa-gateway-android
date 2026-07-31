@@ -21,12 +21,39 @@ import kotlinx.coroutines.*
 class WaAccessibilityService : AccessibilityService() {
 
     companion object {
+        @Volatile
+        var instance: WaAccessibilityService? = null
+            private set
+
         const val WA_PACKAGE = "com.whatsapp"
+        const val WA_BUSINESS_PACKAGE = "com.whatsapp.w4b"
         const val SEND_BUTTON_ID = "com.whatsapp:id/send"
         const val TEXT_INPUT_ID = "com.whatsapp:id/entry"
         const val CHAT_CONTAINER_ID = "com.whatsapp:id/conversation_contact"
         const val INVALID_NUMBER_DIALOG = "com.whatsapp:id/alertTitle"
         const val TIMEOUT_MS = 5000L
+
+        data class SendResult(
+            val status: String,
+            val errorMessage: String? = null
+        )
+    }
+
+    var onSendResult: ((SendResult) -> Unit)? = null
+
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        instance = this
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        instance = null
+        return super.onUnbind(intent)
+    }
+
+    override fun onDestroy() {
+        instance = null
+        super.onDestroy()
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -42,6 +69,17 @@ class WaAccessibilityService : AccessibilityService() {
 
     enum class AutomationState { IDLE, LOADING_CHAT, TYPING, SENDING, DONE }
 
+    private fun detectWaPackage(): String? {
+        val candidates = listOf(WA_PACKAGE, WA_BUSINESS_PACKAGE)
+        for (pkg in candidates) {
+            try {
+                packageManager.getPackageInfo(pkg, 0)
+                return pkg
+            } catch (_: Exception) {}
+        }
+        return null
+    }
+
     fun initiateSend(phoneNumber: String, message: String, name: String = "") {
         pendingMessage = message
         currentTargetNumber = phoneNumber
@@ -51,26 +89,35 @@ class WaAccessibilityService : AccessibilityService() {
     }
 
     private fun openWhatsAppChat(phoneNumber: String) {
+        val waPackage = detectWaPackage()
+        if (waPackage == null) {
+            LoggingUtil.error("WhatsApp not installed")
+            recordResult(SendResult(SendHistory.STATUS_ERROR, "WhatsApp not installed"))
+            resetState()
+            return
+        }
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 data = android.net.Uri.parse("https://wa.me/$phoneNumber")
-                `package` = WA_PACKAGE
+                `package` = waPackage
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             startActivity(intent)
             startTimeout(TIMEOUT_MS) {
                 LoggingUtil.error("Timeout waiting for chat to load")
+                recordResult(SendResult(SendHistory.STATUS_FAILED, "Timeout waiting for chat"))
                 resetState()
             }
         } catch (e: Exception) {
             LoggingUtil.error("Failed to open WhatsApp: ${e.message}")
-            recordResult(SendHistory.STATUS_ERROR, e.message)
+            recordResult(SendResult(SendHistory.STATUS_ERROR, e.message))
             resetState()
         }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        if (event.packageName != WA_PACKAGE) return
+        val eventPackage = event.packageName?.toString() ?: return
+        if (eventPackage != WA_PACKAGE && eventPackage != WA_BUSINESS_PACKAGE) return
 
         when (state) {
             AutomationState.LOADING_CHAT -> handleChatLoading(event)
@@ -204,7 +251,7 @@ class WaAccessibilityService : AccessibilityService() {
             val root = rootInActiveWindow ?: return
             val currentPackage = event.packageName?.toString() ?: ""
 
-            if (currentPackage != WA_PACKAGE || root.findAccessibilityNodeInfosByViewId(SEND_BUTTON_ID)?.isEmpty() == true) {
+            if (currentPackage != WA_PACKAGE && currentPackage != WA_BUSINESS_PACKAGE || root.findAccessibilityNodeInfosByViewId(SEND_BUTTON_ID)?.isEmpty() == true) {
                 timeoutJob?.cancel()
                 recordResult(SendHistory.STATUS_SENT)
                 LoggingUtil.info("Message sent successfully to $currentTargetNumber")
@@ -265,6 +312,7 @@ class WaAccessibilityService : AccessibilityService() {
 
     private fun recordResult(status: String, error: String? = null) {
         val number = currentTargetNumber ?: return
+        onSendResult?.invoke(SendResult(status, error))
         serviceScope.launch(Dispatchers.IO) {
             historyRepo.insert(
                 SendHistory(

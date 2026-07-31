@@ -1,6 +1,7 @@
 package com.aji.wa_gateway.service
 
 import android.content.Context
+import com.aji.wa_gateway.WaAccessibilityService
 import com.aji.wa_gateway.db.entity.AppConfig
 import com.aji.wa_gateway.db.entity.SendHistory
 import com.aji.wa_gateway.db.entity.Target
@@ -41,6 +42,12 @@ class AutomationService(
             return
         }
 
+        val waService = WaAccessibilityService.instance
+        if (waService == null) {
+            LoggingUtil.error("Accessibility service not enabled")
+            return
+        }
+
         job = CoroutineScope(Dispatchers.IO).launch {
             currentState = STATE_RUNNING
             onStatusChanged?.invoke(STATE_RUNNING)
@@ -66,7 +73,7 @@ class AutomationService(
 
                 onMessageGenerated?.invoke(message)
 
-                val result = sendMessage(target.nomorHp, message, config)
+                val result = sendMessage(target, message, config)
 
                 val historyEntry = SendHistory(
                     nomorHp = target.nomorHp,
@@ -102,21 +109,26 @@ class AutomationService(
         }
     }
 
-    private suspend fun sendMessage(phoneNumber: String, message: String, config: AppConfig): SendResult {
-        val waIntent = context.packageManager.getLaunchIntentForPackage("com.whatsapp")
-        if (waIntent == null) {
-            LoggingUtil.error("WhatsApp not installed")
-            return SendResult(SendHistory.STATUS_ERROR, "WhatsApp not installed")
+    private suspend fun sendMessage(target: Target, message: String, config: AppConfig): WaAccessibilityService.SendResult {
+        val waService = WaAccessibilityService.instance
+        if (waService == null) {
+            LoggingUtil.error("Accessibility service not enabled")
+            return WaAccessibilityService.SendResult(SendHistory.STATUS_ERROR, "Accessibility service not enabled")
         }
 
-        val normalizedNumber = phoneNumber.replace(Regex("[^0-9]"), "")
+        val normalizedNumber = target.nomorHp.replace(Regex("[^0-9]"), "")
         if (normalizedNumber.length < 5) {
-            return SendResult(SendHistory.STATUS_INVALID_NUMBER, "Invalid phone number")
+            return WaAccessibilityService.SendResult(SendHistory.STATUS_INVALID_NUMBER, "Invalid phone number")
         }
 
         LoggingUtil.info("Opening WA: https://wa.me/$normalizedNumber")
 
-        return SendResult(SendHistory.STATUS_SENT)
+        return suspendCancellableCoroutine { cont ->
+            waService.onSendResult = { result ->
+                if (cont.isActive) cont.resume(result)
+            }
+            waService.initiateSend(normalizedNumber, message, target.namaPemilik)
+        }
     }
 
     fun pause() {
